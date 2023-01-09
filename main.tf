@@ -1,3 +1,13 @@
+data "aws_vpc" "vpc" {
+  default = true
+}
+
+resource "aws_service_discovery_private_dns_namespace" "this" {
+  name        = "temp.appmesh"
+  description = "Internal Service Discovery for app mesh example"
+  vpc         = data.aws_vpc.vpc.id
+}
+
 resource "aws_appmesh_mesh" "this" {
   name  = "example"
 
@@ -82,7 +92,7 @@ resource "aws_appmesh_route" "this" {
 }
 
 resource "aws_appmesh_virtual_service" "this" {
-  name      = "example.${data.aws_route53_zone.cloudmap.name}"
+  name      = "example.${aws_service_discovery_private_dns_namespace.this.name}"
   mesh_name = aws_appmesh_mesh.this.id
 
   spec {
@@ -115,7 +125,7 @@ resource "aws_appmesh_virtual_node" "service" {
     service_discovery {
       aws_cloud_map {
         service_name   = "example"
-        namespace_name = data.aws_route53_zone.cloudmap.name
+        namespace_name = aws_service_discovery_private_dns_namespace.this.name
       }
     }
   }
